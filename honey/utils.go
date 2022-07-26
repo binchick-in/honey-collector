@@ -1,9 +1,12 @@
 package honey
 
 import (
-    "os"
-    "errors"
-    "encoding/json"
+	"encoding/json"
+	"errors"
+	"io"
+    "log"
+	"io/ioutil"
+	"os"
 )
 
 const GOOGLECLOUD_PLATFORM_CREDS = "GCP_CREDS"
@@ -13,7 +16,7 @@ var (
 )
 
 /*
-Check the environment for 
+Check the environment for GCP_CREDS and then parse and return
 */
 func checkEnvForCreds() (creds []byte, projectId string) {
     var structuredCreds map[string]string
@@ -28,4 +31,23 @@ func checkEnvForCreds() (creds []byte, projectId string) {
     }
     projectId = structuredCreds["project_id"]  // Handle missing key
     return
+}
+
+
+func processMapOfSlices(x map[string][]string) map[string]string {
+    r := make(map[string]string)
+    for k, v := range x {
+        r[k] = v[0]
+    }
+    return r
+}
+
+
+func decodeRequestBody(b io.ReadCloser) string {
+    rawBody, err := ioutil.ReadAll(b)
+    if err != nil {
+        log.Print(err)
+        return "ERROR PARSING BODY"
+    }
+    return string(rawBody)
 }
