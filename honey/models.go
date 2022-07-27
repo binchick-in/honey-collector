@@ -30,16 +30,15 @@ func NewLoggedRequest(r http.Request) LoggedRequest {
 	if r.Method == http.MethodPost {
 		decodedBody = decodeRequestBody(r.Body)
 	}
-	host := strings.Split(r.Host, ":")
+	remoteHost := strings.Split(r.RemoteAddr, ":")
 	return LoggedRequest{
-        Host:          host[0],
+        Host:          r.Host,
         Method:        r.Method,
 		Path:          r.URL.Path,
-        RemoteAddress: r.RemoteAddr,
+        RemoteAddress: remoteHost[0],
         UserAgent:     r.UserAgent(),
         QueryParams:   processMapOfSlices(r.URL.Query()),
         Headers:       processMapOfSlices(r.Header),
         Body:          decodedBody,
     }
-
 }
