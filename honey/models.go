@@ -1,10 +1,10 @@
 package honey
 
 import (
-    "time"
-    "strings"
-    "net/http"
     "encoding/json"
+    "net/http"
+    "strings"
+    "time"
 )
 
 type LoggedRequest struct {

@@ -11,12 +11,12 @@ var honeyClient honey.HoneyClient
 
 func ReqHandler(resp http.ResponseWriter, req *http.Request) {
     lr := honey.NewLoggedRequest(*req)
-    fmt.Println(lr.ToJson())
-    fmt.Fprintf(resp, "ree")
+    honeyClient.Publish([]byte(lr.ToJson()))
+    fmt.Fprintf(resp, "\\( ^ o ^)/")
 }
 
 func main() {
-    defaultPort := 8081
+    defaultPort := 80
     honeyClient = honey.NewHoneyClientFromEnv()
     fmt.Printf("Starting honey pot on port: %d\n", defaultPort)
     http.HandleFunc("/", ReqHandler)

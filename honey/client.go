@@ -30,7 +30,7 @@ func (h *HoneyClient) Publish(data []byte) {
     if err != nil {
         panic(err)
     }
-    fmt.Println(s)
+    fmt.Println(s)  // Remove this line
 }
 
 
