@@ -2,7 +2,6 @@ package honey
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"cloud.google.com/go/pubsub"
@@ -24,12 +23,7 @@ func (h *HoneyClient) Publish(data []byte) {
 		Data:       data,
 		Attributes: h.hostMetaData,
 	}
-	r := h.topic.Publish(ctx, &msg) // Leave this unassigned for now. We might want to handle this later though.
-	s, err := r.Get(ctx)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(s) // Remove this line
+	h.topic.Publish(ctx, &msg)
 }
 
 func NewHoneyClientFromEnv() HoneyClient {
