@@ -1,27 +1,39 @@
 package main
 
 import (
-    "fmt"
-    "net/http"
+	"flag"
+	"fmt"
+	"net/http"
+	"sync"
 
-    "honey-collector/honey"
+	"honey-collector/honey"
 )
 
-var honeyClient honey.HoneyClient
+var (
+	honeyClient honey.HoneyClient
+	ports       string
+)
 
 func ReqHandler(resp http.ResponseWriter, req *http.Request) {
-    lr := honey.NewLoggedRequest(*req)
-    honeyClient.Publish([]byte(lr.ToJson()))
-    fmt.Fprintf(resp, "\\( ^ o ^)/")
+	lr := honey.NewLoggedRequest(*req)
+	honeyClient.Publish([]byte(lr.ToJson()))
+	fmt.Fprintf(resp, "\\( ^ o ^)/")
 }
 
 func main() {
-    defaultPort := 80
-    honeyClient = honey.NewHoneyClientFromEnv()
-    fmt.Printf("Starting honey pot on port: %d\n", defaultPort)
-    http.HandleFunc("/", ReqHandler)
-    serverStartErr := http.ListenAndServe(fmt.Sprintf(":%d", defaultPort), nil)
-    if serverStartErr != nil {
-        panic(serverStartErr)
-    }
+	flag.StringVar(&ports, "ports", "", "Wrap your port list in double quotes")
+	flag.Parse()
+
+	var wg sync.WaitGroup
+	preppedPorts := honey.PreparePorts(ports)
+	honeyClient = honey.NewHoneyClientFromEnv()
+	http.HandleFunc("/", ReqHandler)
+
+	for _, p := range preppedPorts {
+		wg.Add(1)
+		addr := fmt.Sprintf(":%s", p)
+		fmt.Printf("Starting honey pot on port: %s\n", p)
+		go http.ListenAndServe(addr, nil)
+	}
+	wg.Wait()
 }
