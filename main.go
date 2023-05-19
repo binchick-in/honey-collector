@@ -10,19 +10,21 @@ import (
 )
 
 var (
-	honeyClient honey.HoneyClient
-	ports       string
+	honeyClient  honey.HoneyClient
+	ports        string
+	responseText string
 )
 
 func ReqHandler(resp http.ResponseWriter, req *http.Request) {
 	lr := honey.NewLoggedRequest(*req)
 	fmt.Println(lr.ToJson())
 	honeyClient.Publish([]byte(lr.ToJson()))
-	fmt.Fprintf(resp, "\\( ^ o ^)/")
+	fmt.Fprint(resp, responseText)
 }
 
 func main() {
 	flag.StringVar(&ports, "ports", "", "Wrap your port list in double quotes")
+	flag.StringVar(&responseText, "response", "\\( ^ o ^)/", "String to respond to web requests with")
 	flag.Parse()
 
 	var wg sync.WaitGroup
