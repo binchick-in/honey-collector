@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"flag"
 	"fmt"
 	"net/http"
@@ -16,7 +17,7 @@ var (
 
 func ReqHandler(resp http.ResponseWriter, req *http.Request) {
 	lr := honey.NewLoggedRequest(*req)
-	fmt.Println(lr.ToJson())
+	log.Println(lr.ToJson())
 	honeyClient.Publish([]byte(lr.ToJson()))
 	fmt.Fprint(resp, responseText)
 }
