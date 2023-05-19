@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"sync"
 
 	"honey-collector/honey"
 )
@@ -22,21 +21,28 @@ func ReqHandler(resp http.ResponseWriter, req *http.Request) {
 	fmt.Fprint(resp, responseText)
 }
 
+
+func startListener(startErrorChannel chan<- error, port string) {
+	addr := fmt.Sprintf(":%s", port)
+	fmt.Printf("Starting honey pot on port: %s\n", port)
+	err := http.ListenAndServe(addr, nil)
+	if err != nil {
+		startErrorChannel <- err
+	}
+}
+
 func main() {
 	flag.StringVar(&ports, "ports", "", "Wrap your port list in double quotes")
 	flag.StringVar(&responseText, "response", "\\( ^ o ^)/", "String to respond to web requests with")
 	flag.Parse()
 
-	var wg sync.WaitGroup
 	preppedPorts := honey.PreparePorts(ports)
 	honeyClient = honey.NewHoneyClientFromEnv()
 	http.HandleFunc("/", ReqHandler)
+	startErrorChannel := make(chan error)
 
 	for _, p := range preppedPorts {
-		wg.Add(1)
-		addr := fmt.Sprintf(":%s", p)
-		fmt.Printf("Starting honey pot on port: %s\n", p)
-		go http.ListenAndServe(addr, nil)
+		go startListener(startErrorChannel, p)
 	}
-	wg.Wait()
+	panic(<-startErrorChannel)
 }
