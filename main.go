@@ -16,6 +16,7 @@ var (
 
 func ReqHandler(resp http.ResponseWriter, req *http.Request) {
 	lr := honey.NewLoggedRequest(*req)
+	fmt.Println(lr.ToJson())
 	honeyClient.Publish([]byte(lr.ToJson()))
 	fmt.Fprintf(resp, "\\( ^ o ^)/")
 }
