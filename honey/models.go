@@ -19,20 +19,20 @@ type LoggedRequest struct {
 	Time          uint64            `json:"time"`
 }
 
-func (lr *LoggedRequest) ToJson() string {
+func (lr *LoggedRequest) ToJson() (string, error) {
 	j, err := json.Marshal(lr)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return string(j)
+	return string(j), nil
 }
 
-func NewLoggedRequest(r http.Request) LoggedRequest {
+func NewLoggedRequest(r *http.Request) LoggedRequest {
 	var decodedBody string
 	if r.Method == http.MethodPost {
 		decodedBody = decodeRequestBody(r.Body)
 	}
-	remoteHost := strings.Split(r.RemoteAddr, ":")
+	remoteHost := strings.SplitN(r.RemoteAddr, ":", 2)
 	return LoggedRequest{
 		Host:          r.Host,
 		Method:        r.Method,

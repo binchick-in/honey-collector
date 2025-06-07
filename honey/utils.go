@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -19,19 +18,21 @@ var (
 /*
 Check the environment for GCP_CREDS and then parse and return
 */
-func checkEnvForCreds() (creds []byte, projectId string) {
+func checkEnvForCreds() ([]byte, string, error) {
 	var structuredCreds map[string]string
 	val, present := os.LookupEnv(GOOGLECLOUD_PLATFORM_CREDS)
 	if !present {
-		panic(ErrCredsNotFound)
+		return nil, "", ErrCredsNotFound
 	}
-	creds = []byte(val)
-	jErr := json.Unmarshal(creds, &structuredCreds)
-	if jErr != nil {
-		panic(jErr)
+	creds := []byte(val)
+	if err := json.Unmarshal(creds, &structuredCreds); err != nil {
+		return nil, "", err
 	}
-	projectId = structuredCreds["project_id"] // Handle missing key
-	return
+	projectId, ok := structuredCreds["project_id"]
+	if !ok {
+		return nil, "", errors.New("project_id not found in credentials")
+	}
+	return creds, projectId, nil
 }
 
 func processMapOfSlices(x map[string][]string) map[string]string {
@@ -43,12 +44,20 @@ func processMapOfSlices(x map[string][]string) map[string]string {
 }
 
 func decodeRequestBody(b io.ReadCloser) string {
-	rawBody, err := ioutil.ReadAll(b)
+	rawBody, err := io.ReadAll(b)
 	if err != nil {
 		log.Print(err)
 		return "ERROR PARSING BODY"
 	}
 	return string(rawBody)
+}
+
+func getTopicFromEnv() string {
+	topic, present := os.LookupEnv("PUBSUB_TOPIC")
+	if !present {
+		return "default-topic" // Default topic if not set
+	}
+	return topic
 }
 
 func PreparePorts(x string) (a []string) {

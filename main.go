@@ -1,31 +1,44 @@
 package main
 
 import (
-	"log"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"os/signal"
 
 	"honey-collector/honey"
 )
 
 var (
-	honeyClient  honey.HoneyClient
 	ports        string
 	responseText string
 )
 
-func ReqHandler(resp http.ResponseWriter, req *http.Request) {
-	lr := honey.NewLoggedRequest(*req)
-	log.Println(lr.ToJson())
-	honeyClient.Publish([]byte(lr.ToJson()))
+func ReqHandler(honeyClient *honey.HoneyClient, resp http.ResponseWriter, req *http.Request) {
+	lr := honey.NewLoggedRequest(req)
+	jsonStr, err := lr.ToJson()
+	if err != nil {
+		log.Printf("JSON marshal error: %v", err)
+		http.Error(resp, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	log.Printf("Request: %s", jsonStr)
+	if err := honeyClient.Publish(req.Context(), []byte(jsonStr)); err != nil {
+		log.Printf("Publish error: %v", err)
+		http.Error(resp, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 	fmt.Fprint(resp, responseText)
 }
 
-
-func startListener(startErrorChannel chan<- error, port string) {
+func startListener(honeyClient *honey.HoneyClient, startErrorChannel chan<- error, port string) {
 	addr := fmt.Sprintf(":%s", port)
-	fmt.Printf("Starting honey pot on port: %s\n", port)
+	log.Printf("Starting honey pot on port: %s", port)
+	http.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
+		ReqHandler(honeyClient, resp, req)
+	})
 	err := http.ListenAndServe(addr, nil)
 	if err != nil {
 		startErrorChannel <- err
@@ -33,17 +46,27 @@ func startListener(startErrorChannel chan<- error, port string) {
 }
 
 func main() {
-	flag.StringVar(&ports, "ports", "", "Wrap your port list in double quotes")
+	flag.StringVar(&ports, "ports", "", "Comma-separated list of ports")
 	flag.StringVar(&responseText, "response", "\\( ^ o ^)/", "String to respond to web requests with")
 	flag.Parse()
 
 	preppedPorts := honey.PreparePorts(ports)
-	honeyClient = honey.NewHoneyClientFromEnv()
-	http.HandleFunc("/", ReqHandler)
-	startErrorChannel := make(chan error)
+	honeyClient, err := honey.NewHoneyClientFromEnv()
+	if err != nil {
+		log.Fatalf("Failed to create HoneyClient: %v", err)
+	}
+	startErrorChannel := make(chan error, len(preppedPorts))
 
 	for _, p := range preppedPorts {
-		go startListener(startErrorChannel, p)
+		go startListener(honeyClient, startErrorChannel, p)
 	}
-	panic(<-startErrorChannel)
+	// Graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
+	select {
+	case err := <-startErrorChannel:
+		log.Fatalf("Server error: %v", err)
+	case sig := <-sigChan:
+		log.Printf("Received signal: %v. Shutting down.", sig)
+	}
 }

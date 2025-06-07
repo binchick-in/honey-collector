@@ -8,7 +8,6 @@ import (
 	"google.golang.org/api/option"
 )
 
-var ctx = context.Background()
 
 type hostMetaData map[string]string
 
@@ -18,35 +17,37 @@ type HoneyClient struct {
 	hostMetaData hostMetaData
 }
 
-func (h *HoneyClient) Publish(data []byte) {
-	msg := pubsub.Message{
+func (h *HoneyClient) Publish(ctx context.Context, data []byte) error {
+	msg := &pubsub.Message{
 		Data:       data,
 		Attributes: h.hostMetaData,
 	}
-	h.topic.Publish(ctx, &msg)
+	result := h.topic.Publish(ctx, msg)
+	_, err := result.Get(ctx)
+	return err
 }
 
-func NewHoneyClientFromEnv() HoneyClient {
-	creds, projectid := checkEnvForCreds()
-	pubSubClient, pubSubClientErr := pubsub.NewClient(
-		ctx,
-		projectid,
-		option.WithCredentialsJSON(creds),
-	)
+func NewHoneyClientFromEnv() (*HoneyClient, error) {
+	creds, projectid, err := checkEnvForCreds()
+	if err != nil {
+		return nil, err
+	}
+	ctx := context.Background()
+	pubSubClient, pubSubClientErr := pubsub.NewClient(ctx, projectid, option.WithCredentialsJSON(creds))
 	if pubSubClientErr != nil {
-		panic(pubSubClientErr)
+		return nil, pubSubClientErr
 	}
 
 	hostname, hostnameErr := os.Hostname()
 	if hostnameErr != nil {
-		panic(hostnameErr)
+		return nil, hostnameErr
 	}
 
-	return HoneyClient{
+	return &HoneyClient{
 		client: pubSubClient,
-		topic:  pubSubClient.Topic("honey"), // TODO: Put topic string in environment
+		topic:  pubSubClient.Topic(getTopicFromEnv()),
 		hostMetaData: hostMetaData{
 			"hostname": hostname,
 		},
-	}
+	}, nil
 }
