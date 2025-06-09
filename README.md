@@ -35,6 +35,8 @@ Honey Collector is a tool for running one or more fake HTTP servers ("honeypots"
 
 ### ⚡ Quick Start
 
+_With Google provider since that is the only one currently._
+
 1. **Clone and build:**
     ```sh
     git clone <repository-url>
@@ -47,6 +49,8 @@ Honey Collector is a tool for running one or more fake HTTP servers ("honeypots"
     # Download your service account JSON key
     export GCP_CREDS=$(cat path/to/service-account-key.json)
     ```
+    - You'll also need to set a topic in GCP called `honey`
+    - You can also set the `PUBSUB_TOPIC` environment variable to change the topic name used by Honey Collector
 
 3. **Run the honeypot:**
     ```sh
