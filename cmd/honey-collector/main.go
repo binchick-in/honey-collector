@@ -1,4 +1,3 @@
-// Main entry point for the honey-collector application.
 package main
 
 import (

@@ -19,5 +19,5 @@ Broken into 2 primary parts (the collector and the consumer), you can deploy Hon
 3. Config a GCP service account with pub/sub publisher permissions and download the json key.
 
 ```
-GCP_CREDS=$(cat service-account-cred.json) ./honey-collector --ports "8080"
+GCP_CREDS=$(cat service-account-cred.json) ./honey --ports "8080"
 ```
