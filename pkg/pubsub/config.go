@@ -30,7 +30,6 @@ func checkEnvForCreds() ([]byte, string, error) {
 	return creds, projectId, nil
 }
 
-
 func getTopicFromEnv() string {
 	topic, present := os.LookupEnv("PUBSUB_TOPIC")
 	if !present {

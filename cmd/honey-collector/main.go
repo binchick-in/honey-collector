@@ -18,7 +18,7 @@ import (
 var (
 	ports        string
 	responseText string
-	backendName string
+	backendName  string
 )
 
 func ReqHandler(honeyBackend interfaces.HoneyBackend, resp http.ResponseWriter, req *http.Request) {

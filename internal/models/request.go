@@ -2,11 +2,11 @@ package models
 
 import (
 	"encoding/json"
+	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
-	"io"
-	"log"
 )
 
 // LoggedRequest represents a structured HTTP request for logging

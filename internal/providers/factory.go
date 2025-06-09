@@ -7,7 +7,6 @@ import (
 	"honey-collector/pkg/pubsub"
 )
 
-
 func NewHoneyBackend(backendName string) (interfaces.HoneyBackend, error) {
 	switch backendName {
 	case "google":
