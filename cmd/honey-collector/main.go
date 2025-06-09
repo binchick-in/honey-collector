@@ -38,7 +38,7 @@ func ReqHandler(honeyBackend interfaces.HoneyBackend, resp http.ResponseWriter, 
 	fmt.Fprint(resp, responseText)
 }
 
-// Starr the HTTP server listening on the specified port
+// Start the HTTP server listening on the specified port
 func startListener(honeyClient interfaces.HoneyBackend, startErrorChannel chan<- error, port string) {
 	addr := fmt.Sprintf(":%s", port)
 	log.Printf("Starting honey pot on port: %s", port)
