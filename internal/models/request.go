@@ -1,12 +1,15 @@
-package honey
+package models
 
 import (
 	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
+	"io"
+	"log"
 )
 
+// LoggedRequest represents a structured HTTP request for logging
 type LoggedRequest struct {
 	Host          string            `json:"host"`
 	Method        string            `json:"method"`
@@ -44,4 +47,23 @@ func NewLoggedRequest(r *http.Request) LoggedRequest {
 		Body:          decodedBody,
 		Time:          uint64(time.Now().Unix()),
 	}
+}
+
+// Converts a map with string keys and slice of strings values to a map with string keys and string values.
+func processMapOfSlices(x map[string][]string) map[string]string {
+	r := make(map[string]string)
+	for k, v := range x {
+		r[k] = v[0]
+	}
+	return r
+}
+
+// NOTE: There seems to be many instances of errors here, but I'm unsure what kind of body is causing an error on read
+func decodeRequestBody(b io.ReadCloser) string {
+	rawBody, err := io.ReadAll(b)
+	if err != nil {
+		log.Print(err)
+		return "ERROR PARSING BODY"
+	}
+	return string(rawBody)
 }

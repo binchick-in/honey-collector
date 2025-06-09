@@ -1,3 +1,4 @@
+// Main entry point for the honey-collector application.
 package main
 
 import (
@@ -8,16 +9,20 @@ import (
 	"os"
 	"os/signal"
 
-	"honey-collector/honey"
+	"honey-collector/internal/interfaces"
+	"honey-collector/internal/models"
+	"honey-collector/internal/providers"
+	"honey-collector/pkg/utils"
 )
 
 var (
 	ports        string
 	responseText string
+	backendName string
 )
 
-func ReqHandler(honeyClient *honey.HoneyClient, resp http.ResponseWriter, req *http.Request) {
-	lr := honey.NewLoggedRequest(req)
+func ReqHandler(honeyBackend interfaces.HoneyBackend, resp http.ResponseWriter, req *http.Request) {
+	lr := models.NewLoggedRequest(req)
 	jsonStr, err := lr.ToJson()
 	if err != nil {
 		log.Printf("JSON marshal error: %v", err)
@@ -25,7 +30,7 @@ func ReqHandler(honeyClient *honey.HoneyClient, resp http.ResponseWriter, req *h
 		return
 	}
 	log.Printf("Request: %s", jsonStr)
-	if err := honeyClient.Publish(req.Context(), []byte(jsonStr)); err != nil {
+	if err := honeyBackend.Publish(req.Context(), []byte(jsonStr)); err != nil {
 		log.Printf("Publish error: %v", err)
 		http.Error(resp, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -33,7 +38,8 @@ func ReqHandler(honeyClient *honey.HoneyClient, resp http.ResponseWriter, req *h
 	fmt.Fprint(resp, responseText)
 }
 
-func startListener(honeyClient *honey.HoneyClient, startErrorChannel chan<- error, port string) {
+// Starr the HTTP server listening on the specified port
+func startListener(honeyClient interfaces.HoneyBackend, startErrorChannel chan<- error, port string) {
 	addr := fmt.Sprintf(":%s", port)
 	log.Printf("Starting honey pot on port: %s", port)
 	http.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
@@ -46,19 +52,20 @@ func startListener(honeyClient *honey.HoneyClient, startErrorChannel chan<- erro
 }
 
 func main() {
-	flag.StringVar(&ports, "ports", "", "Comma-separated list of ports")
 	flag.StringVar(&responseText, "response", "\\( ^ o ^)/", "String to respond to web requests with")
+	flag.StringVar(&ports, "ports", "", "Comma-separated list of ports")
+	flag.StringVar(&backendName, "provider", "sql", "Name of the data processing provider: sql, google, etc")
 	flag.Parse()
 
-	preppedPorts := honey.PreparePorts(ports)
-	honeyClient, err := honey.NewHoneyClientFromEnv()
+	preppedPorts := utils.PreparePorts(ports)
+	honeyBackend, err := providers.NewHoneyBackend(backendName)
 	if err != nil {
-		log.Fatalf("Failed to create HoneyClient: %v", err)
+		log.Fatalf("Failed to create Honey Provider: %v", err)
 	}
 	startErrorChannel := make(chan error, len(preppedPorts))
 
 	for _, p := range preppedPorts {
-		go startListener(honeyClient, startErrorChannel, p)
+		go startListener(honeyBackend, startErrorChannel, p)
 	}
 	// Graceful shutdown
 	sigChan := make(chan os.Signal, 1)

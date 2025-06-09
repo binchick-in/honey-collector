@@ -1,4 +1,4 @@
-package honey
+package pubsub
 
 import (
 	"context"
@@ -6,18 +6,19 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"google.golang.org/api/option"
-)
 
+	"honey-collector/internal/interfaces"
+)
 
 type hostMetaData map[string]string
 
-type HoneyClient struct {
+type GooglePubSubClient struct {
 	client       *pubsub.Client
 	topic        *pubsub.Topic
 	hostMetaData hostMetaData
 }
 
-func (h *HoneyClient) Publish(ctx context.Context, data []byte) error {
+func (h *GooglePubSubClient) Publish(ctx context.Context, data []byte) error {
 	msg := &pubsub.Message{
 		Data:       data,
 		Attributes: h.hostMetaData,
@@ -27,7 +28,7 @@ func (h *HoneyClient) Publish(ctx context.Context, data []byte) error {
 	return err
 }
 
-func NewHoneyClientFromEnv() (*HoneyClient, error) {
+func NewGooglePubSubClient() (interfaces.HoneyBackend, error) {
 	creds, projectid, err := checkEnvForCreds()
 	if err != nil {
 		return nil, err
@@ -43,7 +44,7 @@ func NewHoneyClientFromEnv() (*HoneyClient, error) {
 		return nil, hostnameErr
 	}
 
-	return &HoneyClient{
+	return &GooglePubSubClient{
 		client: pubSubClient,
 		topic:  pubSubClient.Topic(getTopicFromEnv()),
 		hostMetaData: hostMetaData{
