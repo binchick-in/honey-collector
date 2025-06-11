@@ -41,10 +41,11 @@ func ReqHandler(honeyBackend interfaces.HoneyBackend, resp http.ResponseWriter, 
 func startListener(honeyClient interfaces.HoneyBackend, startErrorChannel chan<- error, port string) {
 	addr := fmt.Sprintf(":%s", port)
 	log.Printf("Starting honey pot on port: %s", port)
-	http.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
 		ReqHandler(honeyClient, resp, req)
 	})
-	err := http.ListenAndServe(addr, nil)
+	err := http.ListenAndServe(addr, mux)
 	if err != nil {
 		startErrorChannel <- err
 	}
